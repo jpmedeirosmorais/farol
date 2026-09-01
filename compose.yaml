@@ -1,0 +1,15 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: farol-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Farol@Local2026"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - farol-db-data:/var/opt/mssql
+
+volumes:
+  farol-db-data:

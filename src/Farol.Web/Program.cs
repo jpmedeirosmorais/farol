@@ -1,10 +1,15 @@
 using Farol.Web.Components;
+using Farol.Web.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddDbContextFactory<FarolDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Farol")));
 
 var app = builder.Build();
 

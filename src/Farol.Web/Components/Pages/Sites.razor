@@ -1,0 +1,66 @@
+@page "/sites"
+@using Farol.Web.Data
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<FarolDbContext> DbFactory
+@rendermode InteractiveServer
+
+<PageTitle>Sites</PageTitle>
+
+<h1>Monitored sites</h1>
+
+@if (sites is null)
+{
+    <p>Loading...</p>
+}
+else if (sites.Count == 0)
+{
+    <p>No sites registered yet.</p>
+    <button class="btn btn-primary" @onclick="AddSampleAsync">
+        Add a sample site
+    </button>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr><th>Name</th><th>URL</th><th>Interval</th><th>Active</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var site in sites)
+        {
+            <tr>
+                <td>@site.Name</td>
+                <td>@site.Url</td>
+                <td>@site.CheckIntervalMinutes min</td>
+                <td>@(site.IsActive ? "yes" : "no")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Site>? sites;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        sites = await db.Sites.AsNoTracking()
+            .OrderBy(s => s.Name)
+            .ToListAsync();
+    }
+
+    private async Task AddSampleAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        db.Sites.Add(new Site
+        {
+            Name = "Sofmak's",
+            Url = "https://sofmaks.dev"
+        });
+        await db.SaveChangesAsync();
+        await LoadAsync();
+    }
+}
