@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Farol.Web/Farol.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Farol.Tests/Farol.Tests.csproj" />
+  </Folder>
+</Solution>
