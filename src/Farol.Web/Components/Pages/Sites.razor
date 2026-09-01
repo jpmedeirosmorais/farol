@@ -46,7 +46,7 @@ else
 
     private async Task LoadAsync()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
         sites = await db.Sites.AsNoTracking()
             .OrderBy(s => s.Name)
             .ToListAsync();
@@ -54,7 +54,7 @@ else
 
     private async Task AddSampleAsync()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
+        await using var db = await DbFactory.CreateDbContextAsync();
         db.Sites.Add(new Site
         {
             Name = "Sofmak's",
