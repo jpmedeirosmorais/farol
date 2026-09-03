@@ -1,5 +1,6 @@
 using Farol.Web.Components;
 using Farol.Web.Data;
+using Farol.Web.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,12 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDbContextFactory<FarolDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Farol")));
+
+builder.Services.AddHttpClient<SiteChecker>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Farol/1.0 (+https://github.com/jpmedeirosmorais/farol)");
+});
 
 var app = builder.Build();
 

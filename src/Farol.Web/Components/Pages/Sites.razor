@@ -2,11 +2,13 @@
 @using Farol.Web.Data
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<FarolDbContext> DbFactory
+@inject Farol.Web.Services.SiteChecker Checker
 @rendermode InteractiveServer
 
 <PageTitle>Sites</PageTitle>
 
 <h1>Monitored sites</h1>
+
 
 @if (sites is null)
 {
@@ -23,7 +25,7 @@ else
 {
     <table class="table">
         <thead>
-        <tr><th>Name</th><th>URL</th><th>Interval</th><th>Active</th></tr>
+        <tr><th>Name</th><th>URL</th><th>Interval</th><th>Active</th><th></th></tr>
         </thead>
         <tbody>
         @foreach (var site in sites)
@@ -32,7 +34,12 @@ else
                 <td>@site.Name</td>
                 <td>@site.Url</td>
                 <td>@site.CheckIntervalMinutes min</td>
-                <td>@(site.IsActive ? "yes" : "no")</td>
+                <td>@(site.IsActive ? "yes" : "no")</td> 
+                <td>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => CheckNowAsync(site)">
+                        Check now
+                    </button>
+                </td>
             </tr>
         }
         </tbody>
@@ -61,6 +68,17 @@ else
             Url = "https://sofmaks.dev"
         });
         await db.SaveChangesAsync();
+        await LoadAsync();
+    }
+    
+    private async Task CheckNowAsync(Site site)
+    {
+        var result = await Checker.CheckAsync(site);
+
+        await using var db = await DbFactory.CreateDbContextAsync();
+        db.SiteChecks.Add(result);
+        await db.SaveChangesAsync();
+
         await LoadAsync();
     }
 }
