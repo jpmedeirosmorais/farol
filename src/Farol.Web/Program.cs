@@ -1,11 +1,14 @@
 using Farol.Web.Components;
+using Farol.Web.Configuration;
 using Farol.Web.Data;
 using Farol.Web.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.Configure<FarolOptions>(
+    builder.Configuration.GetSection(FarolOptions.SectionName));
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
