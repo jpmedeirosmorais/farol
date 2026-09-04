@@ -1,0 +1,63 @@
+@page "/sites/{Id:int}"
+@rendermode InteractiveServer
+
+<PageTitle>@PageName</PageTitle>
+
+@if (_loading)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (_site is null)
+{
+    <div class="alert alert-warning">
+        Site not found. <a href="/sites">Back to the list</a>.
+    </div>
+}
+else
+{
+    <div class="mb-4">
+        <a href="/" class="small text-muted text-decoration-none">← Dashboard</a>
+        <h1 class="h3 mb-1 mt-2">@_site.Name</h1>
+        <a href="@_site.Url" target="_blank">@_site.Url</a>
+        <div class="small text-muted mt-1">
+            Checked every @_site.CheckIntervalMinutes minutes
+        </div>
+    </div>
+
+    @if (_checks.Count == 0)
+    {
+        <p class="text-muted">No checks recorded yet.</p>
+    }
+    else
+    {
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Status</th>
+                    <th class="text-end">Response</th>
+                    <th>Certificate</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var check in _checks)
+                {
+                    <tr>
+                        <td class="small">@LocalTime(check.CheckedAt)</td>
+                        <td>
+                            <span class="badge @(check.IsUp ? "bg-success" : "bg-danger")">
+                                @(check.IsUp ? "up" : "down")
+                            </span>
+                        </td>
+                        <td class="text-end font-monospace">@check.ResponseTimeMs ms</td>
+                        <td class="small text-muted">@CertificateLabel(check)</td>
+                        <td class="small text-muted">@DetailLabel(check)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <p class="small text-muted">Showing the @_checks.Count most recent checks.</p>
+    }
+}

@@ -1,7 +1,75 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Farol</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Monitored sites</h1>
+    <a href="/sites" class="btn btn-sm btn-outline-secondary">Manage sites</a>
+</div>
 
-Welcome to your new app.
+@if (_rows is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (_rows.Count == 0)
+{
+    <div class="alert alert-light border">
+        No sites yet. <a href="/sites">Add the first one</a>.
+    </div>
+}
+else
+{
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Site</th>
+                <th>Status</th>
+                <th class="text-end">Response</th>
+                <th>Certificate</th>
+                <th>Last checked</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in _rows)
+            {
+                <tr class="@(row.IsActive ? "" : "opacity-50")">
+                    <td>
+                        <a href="/sites/@row.Id" class="fw-semibold text-decoration-none">@row.Name</a>
+                        <div class="small text-muted">@row.Url</div>
+                    </td>
+                    <td>
+                        @if (row.LastCheck is null)
+                        {
+                            <span class="badge bg-secondary">never checked</span>
+                        }
+                        else if (row.LastCheck.IsUp)
+                        {
+                            <span class="badge bg-success">up</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">@DownLabel(row.LastCheck)</span>
+                        }
+                    </td>
+                    <td class="text-end font-monospace">@ResponseLabel(row.LastCheck)</td>
+                    <td>
+                        @if (row.LastCheck?.SslExpiresAt is null)
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                        else
+                        {
+                            <span class="@CertificateCss(row.LastCheck.SslExpiresAt.Value)">
+                                @CertificateText(row.LastCheck.SslExpiresAt.Value)
+                            </span>
+                        }
+                    </td>
+                    <td class="small text-muted">@Relative(row.LastCheck?.CheckedAt)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p class="small text-muted">Refreshes automatically every 30 seconds.</p>
+}

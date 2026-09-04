@@ -1,84 +1,118 @@
 @page "/sites"
-@using Farol.Web.Data
-@using Microsoft.EntityFrameworkCore
-@inject IDbContextFactory<FarolDbContext> DbFactory
-@inject Farol.Web.Services.SiteChecker Checker
 @rendermode InteractiveServer
 
 <PageTitle>Sites</PageTitle>
 
-<h1>Monitored sites</h1>
+<div class="d-flex justify-content-between align-items-baseline mb-4">
+    <h1 class="h3 mb-0">Sites</h1>
+    <span class="small text-muted">@_slotsUsed of @Options.MaxActiveSites slots used</span>
+</div>
 
-
-@if (sites is null)
+@if (!Options.PublicRegistrationEnabled)
 {
-    <p>Loading...</p>
+    <div class="alert alert-secondary py-2 small">
+        Public registration is closed. The sites below are being monitored.
+    </div>
 }
-else if (sites.Count == 0)
+else if (IsFull)
 {
-    <p>No sites registered yet.</p>
-    <button class="btn btn-primary" @onclick="AddSampleAsync">
-        Add a sample site
-    </button>
+    <div class="alert alert-warning py-2 small">
+        The demo is full (@Options.MaxActiveSites sites). Publicly added sites expire
+        after @Options.DemoSiteLifetimeHours hours, so a slot will free up soon.
+    </div>
 }
 else
 {
-    <table class="table">
-        <thead>
-        <tr><th>Name</th><th>URL</th><th>Interval</th><th>Active</th><th></th></tr>
-        </thead>
-        <tbody>
-        @foreach (var site in sites)
-        {
-            <tr>
-                <td>@site.Name</td>
-                <td>@site.Url</td>
-                <td>@site.CheckIntervalMinutes min</td>
-                <td>@(site.IsActive ? "yes" : "no")</td> 
-                <td>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => CheckNowAsync(site)">
-                        Check now
-                    </button>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <EditForm Model="_newSite" OnValidSubmit="AddAsync" FormName="add-site">
+        <DataAnnotationsValidator />
+
+        <div class="row g-2 align-items-start mb-2">
+            <div class="col-sm-3">
+                <InputText @bind-Value="_newSite.Name" class="form-control" placeholder="Name" />
+                <ValidationMessage For="() => _newSite.Name" class="small text-danger" />
+            </div>
+            <div class="col-sm-5">
+                <InputText @bind-Value="_newSite.Url" class="form-control" placeholder="https://example.com" />
+                <ValidationMessage For="() => _newSite.Url" class="small text-danger" />
+            </div>
+            <div class="col-sm-2">
+                <InputNumber @bind-Value="_newSite.CheckIntervalMinutes" class="form-control"
+                             min="@Options.MinCheckIntervalMinutes" />
+                <div class="form-text">min. @Options.MinCheckIntervalMinutes</div>
+            </div>
+            <div class="col-sm-2">
+                <button type="submit" class="btn btn-primary w-100" disabled="@_isSubmitting">
+                    @(_isSubmitting ? "Adding…" : "Add site")
+                </button>
+            </div>
+        </div>
+    </EditForm>
+
+    <p class="small text-muted mb-4">
+        Sites added here are removed automatically after @Options.DemoSiteLifetimeHours hours.
+        Private and internal addresses are rejected.
+    </p>
 }
 
-@code {
-    private List<Site>? sites;
+@if (_errorMessage is not null)
+{
+    <div class="alert alert-danger py-2">@_errorMessage</div>
+}
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+@if (_sites is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else if (_sites.Count == 0)
+{
+    <p class="text-muted">No sites registered yet.</p>
+}
+else
+{
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Interval</th>
+                <th>Expires</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var site in _sites)
+            {
+                <tr>
+                    <td><a href="/sites/@site.Id" class="text-decoration-none">@site.Name</a></td>
+                    <td class="small text-muted">@site.Url</td>
+                    <td>@site.CheckIntervalMinutes min</td>
+                    <td class="small text-muted">@ExpiryLabel(site)</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-secondary"
+                                disabled="@(_checkingId == site.Id)"
+                                @onclick="() => CheckNowAsync(site)">
+                            @(_checkingId == site.Id ? "Checking…" : "Check now")
+                        </button>
 
-    private async Task LoadAsync()
-    {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        sites = await db.Sites.AsNoTracking()
-            .OrderBy(s => s.Name)
-            .ToListAsync();
-    }
-
-    private async Task AddSampleAsync()
-    {
-        await using var db = await DbFactory.CreateDbContextAsync();
-        db.Sites.Add(new Site
-        {
-            Name = "Sofmak's",
-            Url = "https://sofmaks.dev"
-        });
-        await db.SaveChangesAsync();
-        await LoadAsync();
-    }
-    
-    private async Task CheckNowAsync(Site site)
-    {
-        var result = await Checker.CheckAsync(site);
-
-        await using var db = await DbFactory.CreateDbContextAsync();
-        db.SiteChecks.Add(result);
-        await db.SaveChangesAsync();
-
-        await LoadAsync();
-    }
+                        @if (_pendingDeleteId == site.Id)
+                        {
+                            <button class="btn btn-sm btn-danger ms-1" @onclick="() => DeleteAsync(site)">
+                                Confirm
+                            </button>
+                            <button class="btn btn-sm btn-link ms-1" @onclick="() => _pendingDeleteId = null">
+                                Cancel
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-danger ms-1"
+                                    @onclick="() => _pendingDeleteId = site.Id">
+                                Delete
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
