@@ -18,6 +18,8 @@ builder.Services.AddHttpClient<SiteChecker>(client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Farol/1.0 (+https://github.com/jpmedeirosmorais/farol)");
 });
 
+builder.Services.AddHostedService<SiteMonitorWorker>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

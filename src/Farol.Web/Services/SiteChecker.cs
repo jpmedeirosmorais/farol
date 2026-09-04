@@ -45,7 +45,7 @@ public class SiteChecker(HttpClient http)
             {
                 check.SslExpiresAt = await ReadCertificateExpiryAsync(uri, cancellationToken);
             }
-            catch
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 // Não conseguir ler o certificado não invalida a checagem HTTP.
                 // Fica nulo, e a tela mostra "desconhecido".
